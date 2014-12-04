@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.List;
 
 import util.Address;
+import util.WordCountPair;
 
 public class TinyGoogleToClientMsg implements Serializable {
 
@@ -12,8 +13,8 @@ public class TinyGoogleToClientMsg implements Serializable {
 	// 0: indexing
 	// 1: searching
 	private int returnResultType = -1;
-	private boolean isIndexed = false;
-	private List<String> searchResult = null;
+	private boolean isIndexed;
+	private List<WordCountPair> searchResult;
 
 	public TinyGoogleToClientMsg(Address senderAddress, Address receiverAddress, boolean isIndexed) {
 		this.senderAddress = senderAddress;
@@ -23,7 +24,7 @@ public class TinyGoogleToClientMsg implements Serializable {
 	}
 
 	public TinyGoogleToClientMsg(Address senderAddress, Address receiverAddress,
-			List<String> searchResult) {
+			List<WordCountPair> searchResult) {
 		this.senderAddress = senderAddress;
 		this.receiverAddress = receiverAddress;
 		this.searchResult = searchResult;
@@ -58,12 +59,16 @@ public class TinyGoogleToClientMsg implements Serializable {
 		this.isIndexed = isIndexed;
 	}
 
-	public List<String> getSearchResult() {
+	public List<WordCountPair> getSearchResult() {
 		return searchResult;
 	}
 
-	public void setSearchResult(List<String> searchResult) {
+	public void setSearchResult(List<WordCountPair> searchResult) {
 		this.searchResult = searchResult;
+	}
+
+	public void setReturnResultType(int returnResultType) {
+		this.returnResultType = returnResultType;
 	}
 
 }

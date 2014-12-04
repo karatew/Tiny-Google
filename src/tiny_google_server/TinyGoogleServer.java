@@ -1,35 +1,65 @@
 package tiny_google_server;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import name_server.NameServer;
+import message.NamingToTinyGoogleMsg;
 import message.TinyGoogleToNamingMsg;
 import util.Address;
 
 public class TinyGoogleServer {
 
-	private static Socket nameServerSocket;
-	private static Address nameServerAddress;
+	protected static Socket nameServerSocket;
+	protected static Address nameServerAddress;
 
-	private static ServerSocket listener;
-	private static ExecutorService executorService;
-	private static Timer registrationTimer = new Timer();
-	private static Address tinyGoogleAddress = null;
-	private final static int REFRESH_TIME = 30; // in unit of second
+	protected static ServerSocket listener;
+	protected static ExecutorService executorService;
+	protected static Timer registrationTimer = new Timer();
+	protected static Address tinyGoogleAddress = null;
+	protected final static int REFRESH_TIME = 30; // in unit of second
+
+	// List of available helpers that TinyGoogle Server keeps records of
+	protected static List<Address> availableHelperList = null;
+
+	/**
+	 * The main class of TinyGoogleServer is responsible in handling all the 
+	 * indexing information for the files that has been requested by clients. 
+	 * To enhance durability when failures occur, all the necessary data 
+	 * structures are stored in both main memory and on local disk. A timer 
+	 * is used to update the local disk copies for every 30 to 90 seconds, 
+	 * depending on the size of the files to write.
+	 * 
+	 * 'indexTableByFile' is a table to record the index table for each file. It 
+	 * stores the result of word-count for each file.
+	 * 
+	 * 'totalCountByWordTable' is used to store the entire word counts for 
+	 * all indexed files. Every time when a client issues a search request, the 
+	 * results is given according to the results in this table.
+	 * 
+	 * Both of these two tables are store in-memory and on-disk.
+	 */
+	// This table records the index table for each file
+	// Map<file_path, Map<word, count>>
+	protected static ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> indexTableByFile = new ConcurrentHashMap<>();
+	// Inverted Index Table
+	// Map<word, count>
+	protected static ConcurrentHashMap<String, Integer> totalCountByWordTable = new ConcurrentHashMap<>();
 
 	public static void main(String[] args) {
 		try {
@@ -67,9 +97,6 @@ public class TinyGoogleServer {
 
 			/* (3) Listen to incoming request that are sent by Name_Server, Clients and/or helpers */
 			while (true) {
-				Socket socket = listener.accept();
-				// TODO define that TinyGoogler Server needs to do in handling requests from the
-				// following components: NameServer, Client, Helper
 				Boolean result = executorService.submit(new TinyGoogleServerThread()).get();
 				if (result == null) {
 					System.err.println("Tiny_Google_Server{" + tinyGoogleAddress.toString()
@@ -78,7 +105,7 @@ public class TinyGoogleServer {
 				if (!result) {
 					System.err.println("Tiny_Google Server failed in executing a thread!");
 				} else {
-
+					System.out.println("Correct result of MapReduce by a helper is returned.");
 				}
 			}
 
@@ -159,6 +186,34 @@ public class TinyGoogleServer {
 		nameServerSocket.close();
 		System.out.println("Registration to Name_Server{" + nameServerAddress.toString()
 				+ "} is completed!");
+	}
+
+	public static List<Address> getAvailableHelperListFromNameServer()
+			throws NumberFormatException, UnknownHostException, IOException, ClassNotFoundException {
+		System.out.println("Tiny_Google_Server{" + tinyGoogleAddress.toString()
+				+ "} requesting the list of available Helper_Servers to Name_Server{"
+				+ nameServerAddress.toString() + "}...");
+		nameServerSocket = new Socket(nameServerAddress.ip,
+				Integer.parseInt(nameServerAddress.port));
+		ObjectOutputStream nameServerObjectOutputStream = new ObjectOutputStream(
+				nameServerSocket.getOutputStream());
+		TinyGoogleToNamingMsg t2nMsg = new TinyGoogleToNamingMsg(tinyGoogleAddress,
+				nameServerAddress, 0);
+		nameServerObjectOutputStream.writeObject(t2nMsg);
+		nameServerObjectOutputStream.flush();
+
+		ObjectInputStream nameServerObjectInputStream = new ObjectInputStream(
+				nameServerSocket.getInputStream());
+		NamingToTinyGoogleMsg n2tMsg = (NamingToTinyGoogleMsg) nameServerObjectInputStream
+				.readObject();
+		if (n2tMsg == null) {
+			return null;
+		}
+		nameServerObjectOutputStream.close();
+		nameServerObjectInputStream.close();
+		nameServerSocket.close();
+		availableHelperList = n2tMsg.getHelperServerAddressList();
+		return availableHelperList;
 	}
 
 }

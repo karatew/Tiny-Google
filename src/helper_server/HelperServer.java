@@ -21,20 +21,20 @@ import message.HelperToNamingMsg;
 import util.Address;
 
 public class HelperServer {
-	private static Socket nameServerSocket;
-	private static Address nameServerAddress;
+	protected static Socket nameServerSocket;
+	protected static Address nameServerAddress;
 
-	private static Address tinyGoogleServerAddress;
-	private static Socket tinyGoogleServerSocket;
+	protected static Address tinyGoogleServerAddress;
+	protected static Socket tinyGoogleServerSocket;
 
-	private static Address helperServerAddress;
+	protected static Address helperServerAddress;
 
-	private static ServerSocket listener;
+	protected static ServerSocket listener;
 
-	private static ExecutorService executorService;
+	protected static ExecutorService executorService;
 
-	private static Timer registrationTimer = new Timer();
-	private final static int REFRESH_TIME = 30; // in unit of second
+	protected static Timer registrationTimer = new Timer();
+	protected final static int REFRESH_TIME = 30; // in unit of second
 
 	public static void main(String[] args) {
 		try {
@@ -73,7 +73,6 @@ public class HelperServer {
 
 			/* (3) Listen to incoming request that are sent by TinyGoogle Server */
 			while (true) {
-				Socket socket = listener.accept();
 				Boolean result = executorService.submit(new HelperServerThread()).get();
 				if (!result) {
 					System.err.println("Helper Server{" + helperServerAddress.toString()
@@ -128,7 +127,6 @@ public class HelperServer {
 
 	/**
 	 * Read the public directory to find out the address of the Name_Server
-	 * @throws IOException 
 	 */
 	private static void getNameServerAddress() throws IOException {
 		BufferedReader br = null;
@@ -148,9 +146,6 @@ public class HelperServer {
 
 	/**
 	 * (2) Register Tiny_Google server to Name_Server 
-	 * @throws IOException 
-	 * @throws UnknownHostException 
-	 * @throws NumberFormatException 
 	 */
 	private static void registerHelperToNameServer() throws NumberFormatException,
 			UnknownHostException, IOException {
