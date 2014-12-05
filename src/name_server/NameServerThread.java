@@ -19,10 +19,15 @@ import message.TinyGoogleToNamingMsg;
 
 public class NameServerThread implements Callable<Boolean> {
 
+	private Socket socket;
+
+	public NameServerThread(Socket socket) {
+		this.socket = socket;
+	}
+
 	@Override
 	public Boolean call() throws Exception {
 		try {
-			Socket socket = NameServer.listener.accept(); // create a socket for listener
 			InputStream inputStream = socket.getInputStream();
 			ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
 			Object requestMsg = objectInputStream.readObject();
@@ -38,10 +43,11 @@ public class NameServerThread implements Callable<Boolean> {
 			}
 			// if incoming request is sent by TinyGoogle Server
 			if (requestMsg instanceof TinyGoogleToNamingMsg) {
+				System.out.println("\nName_Server received a message from Tiny_Google Server.");
 				Address tinyGoogleServerAddress = ((TinyGoogleToNamingMsg) requestMsg)
 						.getSenderAddress();
 				if (tinyGoogleServerAddress == null) {
-					System.err.println("Failed in resolving Tiny_Google Server's address!");
+					System.err.println("\nFailed in resolving Tiny_Google Server's address!");
 					objectOutputStream.close();
 					objectInputStream.close();
 					socket.close();

@@ -8,36 +8,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class TextFileTools {
+public class TextToolsBox {
 
-	public String filePath;
-	public int helperNumber;
-	public RandomAccessFile file;
-
-	public TextFileTools(String filePath) throws FileNotFoundException, IOException {
-		this.filePath = filePath;
-		this.helperNumber = 1;
-		if (isValidFile(filePath)) {
-			this.file = new RandomAccessFile(filePath, "rw");
-		} else {
-			System.err.println("Invalid file! Error occurred at TextFileSplitter!");
+	public static List<Long> getFileSplitBreakPoints(String filePath, int helperNumber)
+			throws FileNotFoundException, IOException {
+		if (!isValidFile(filePath)) {
+			System.err.println("Invalid file path!");
+			return null;
 		}
-		// file.close(); // CLOSE the file!!!
-	}
-
-	public TextFileTools(String filePath, int helperNumber) throws FileNotFoundException,
-			IOException {
-		this.filePath = filePath;
-		this.helperNumber = helperNumber;
-		if (isValidFile(filePath)) {
-			this.file = new RandomAccessFile(filePath, "rw");
-		} else {
-			System.err.println("Invalid file! Error occurred at TextFileSplitter!");
-		}
-		// file.close(); // CLOSE the file!!!
-	}
-
-	public List<Long> getFileSplitBreakPoints() throws FileNotFoundException, IOException {
+		RandomAccessFile file = new RandomAccessFile(filePath, "rw");
 		List<Long> list = new ArrayList<>();
 		long chunkLen = file.length() / helperNumber;
 		for (int i = 0; i < helperNumber; i++) {
@@ -73,31 +52,18 @@ public class TextFileTools {
 				}
 			}
 		}
+		file.close();
 		return list;
 	}
 
-	private boolean isValidFile(String filePath) {
-		if (filePath == null || !new File(filePath).exists()) {
-			return false;
-		} else {
-			return true;
+	public static ConcurrentHashMap<String, Integer> getWordCountTable(
+			IndexingWorkload indexWorkload) throws IOException {
+		String filePath = indexWorkload.getFilePath();
+		if (!isValidFile(filePath)) {
+			System.err.println("Invalid file path!");
+			return null;
 		}
-	}
-
-	public void closeFile() throws IOException {
-		file.close();
-	}
-
-	private boolean isValidCharInWord(char c) {
-		String validChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-";
-		if (validChars.indexOf(c) != -1)
-			return true;
-		else
-			return false;
-	}
-
-	public ConcurrentHashMap<String, Integer> getWordCountTable(IndexingWorkload indexWorkload)
-			throws IOException {
+		RandomAccessFile file = new RandomAccessFile(filePath, "rw");
 		ConcurrentHashMap<String, Integer> wordCountTable = new ConcurrentHashMap<>();
 		long start = indexWorkload.getStartIndex(), end = indexWorkload.getEndIndex();
 		StringBuffer sb = new StringBuffer();
@@ -121,7 +87,47 @@ public class TextFileTools {
 		wordCountTable.remove("");
 		wordCountTable.remove("--");
 		wordCountTable.remove("s");
+		file.close();
 		return wordCountTable;
+	}
+
+	public static long getFileLength(String filePath) throws IOException {
+		if (!isValidFile(filePath)) {
+			System.err.println("Invalid file path!");
+			return -1;
+		}
+		RandomAccessFile file = new RandomAccessFile(filePath, "rw");
+		long length = file.length();
+		file.close();
+		return length;
+	}
+
+	public static void printCountTable(ConcurrentHashMap<String, Integer> map) {
+		if (map == null) {
+			System.err.println("\nCount Table is a NULL!!!");
+		}
+		map.entrySet()
+				.stream()
+				.unordered()
+				.sorted((o1, o2) -> o1.getValue().intValue() == o2.getValue().intValue() ? 0 : o1
+						.getValue().intValue() < o2.getValue().intValue() ? -1 : 1)
+				.filter(x -> x.getValue() > 1000)
+				.forEach(x -> System.out.println("      " + x.getKey() + " : " + x.getValue()));
+	}
+
+	public static boolean isValidFile(String filePath) {
+		if (filePath == null || !new File(filePath).exists())
+			return false;
+		else
+			return true;
+	}
+
+	public static boolean isValidCharInWord(char c) {
+		String validChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-";
+		if (validChars.indexOf(c) != -1)
+			return true;
+		else
+			return false;
 	}
 
 }

@@ -12,6 +12,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.List;
 
@@ -20,6 +22,7 @@ import message.ClientToTinyGoogleMsg;
 import message.NamingToClientMsg;
 import message.TinyGoogleToClientMsg;
 import util.Address;
+import util.WordCountPair;
 
 /**
  * A client sends messages to NameServer and TinyGoogle Server separately.
@@ -39,7 +42,6 @@ public class Client {
 
 	private static Address clientAddress;
 
-	private static int clientRequestType = -1;
 	private static String indexDirectoryPathName = null;
 	private static List<String> searchKeyWords = new ArrayList<>();
 
@@ -121,9 +123,31 @@ public class Client {
 					tinyGoogleSocket.getInputStream());
 			TinyGoogleToClientMsg t2cMsg = (TinyGoogleToClientMsg) tinyGoogleObjectInputStream
 					.readObject();
+			int returnType = t2cMsg.getReturnResultType();
+			switch (returnType) {
+			case 0:
+				System.out.println("Great! Indexing request is completed by Tiny_Google Server!");
+				break;
+			case 1:
+				List<WordCountPair> result = t2cMsg.getSearchResult();
+				Collections.sort(result, new Comparator<WordCountPair>() {
+					@Override
+					public int compare(WordCountPair o1, WordCountPair o2) {
+						return o1.count == o2.count ? 0 : o1.count < o2.count ? -1 : 1;
+					}
+				});
+				System.out.println("Searching key word occurance...");
+				for (int i = 0; i < searchKeyWords.size(); i++) {
+					System.out.println("      " + result.get(i).word + " : " + result.get(i).count);
+				}
+				break;
+			default:
+				System.err
+						.println("\n  Error in identifying the return type of messages from Tiny_Google Server!");
+
+			}
 			// display the results
 			displayReturnResult(t2cMsg);
-
 			tinyGoogleObjectOutputStream.close();
 			tinyGoogleObjectInputStream.close();
 			tinyGoogleSocket.close();

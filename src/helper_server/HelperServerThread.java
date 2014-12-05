@@ -7,16 +7,22 @@ import java.net.Socket;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 
+import message.HelperToTinyGoogleMsg;
 import message.TinyGoogleToHelperMsg;
-import tiny_google_server.TinyGoogleServer;
 import util.IndexingWorkload;
-import util.TextFileTools;
+import util.TextToolsBox;
 
 public class HelperServerThread implements Callable<Boolean> {
 
+	private Socket helperSocket;
+
+	public HelperServerThread(Socket helperSocket) {
+		this.helperSocket = helperSocket;
+	}
+
 	@Override
 	public Boolean call() throws Exception {
-		Socket helperSocket = HelperServer.listener.accept();
+
 		InputStream helperInputStream = helperSocket.getInputStream();
 		ObjectInputStream helperObjectInputStream = new ObjectInputStream(helperInputStream);
 		Object requestMsg = helperObjectInputStream.readObject();
@@ -41,14 +47,27 @@ public class HelperServerThread implements Callable<Boolean> {
 						.println("Error! Helper received an invalid workload assignment for indexing!");
 				return false;
 			}
-			TextFileTools textFileTools = new TextFileTools(t2hMsg.getIndexingFile());
-			ConcurrentHashMap<String, Integer> countByWordTable = textFileTools
+			ConcurrentHashMap<String, Integer> countByWordTable = TextToolsBox
 					.getWordCountTable(indexingWorkload);
-			// TODO send countByWordTable back to tiny google server
-			
-			
-		}
+			indexingWorkload.setCompletedWork(true);
 
+			// FOR DEBUGGING PURPOSES:
+			TextToolsBox.printCountTable(countByWordTable);
+
+			// send countByWordTable back to tiny google server
+			HelperToTinyGoogleMsg h2tMsg = new HelperToTinyGoogleMsg(
+					HelperServer.helperServerAddress, t2hMsg.getSenderAddress(), countByWordTable,
+					indexingWorkload);
+			// Socket toTinyGoogleSocket = new Socket(t2hMsg.getSenderAddress().ip,
+			// Integer.parseInt(t2hMsg.getSenderAddress().port));
+			// ObjectOutputStream toTinyGoogleObjectOutputStream = new ObjectOutputStream(
+			// toTinyGoogleSocket.getOutputStream());
+			helperObjectOutputStream.writeObject(h2tMsg);
+			helperObjectOutputStream.flush();
+			helperObjectOutputStream.close();
+			helperInputStream.close();
+			helperSocket.close();
+		}
 		return true;
 	}
 

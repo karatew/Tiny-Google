@@ -11,6 +11,10 @@ import util.IndexingWorkload;
  */
 public class TinyGoogleToHelperMsg implements Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1840003666405457522L;
 	private Address senderAddress;
 	private Address receiverAddress;
 	// 0: to map

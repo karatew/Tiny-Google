@@ -1,6 +1,8 @@
 package util;
 
-public class WordCountPair {
+import java.io.Serializable;
+
+public class WordCountPair implements Serializable {
 
 	public String word;
 	public int count;

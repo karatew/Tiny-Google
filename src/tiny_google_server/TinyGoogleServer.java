@@ -3,14 +3,12 @@ package tiny_google_server;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Timer;
@@ -19,7 +17,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import message.NamingToTinyGoogleMsg;
 import message.TinyGoogleToNamingMsg;
 import util.Address;
 
@@ -97,7 +94,9 @@ public class TinyGoogleServer {
 
 			/* (3) Listen to incoming request that are sent by Name_Server, Clients and/or helpers */
 			while (true) {
-				Boolean result = executorService.submit(new TinyGoogleServerThread()).get();
+				Socket tinyGoogleSocket = listener.accept();
+				Boolean result = executorService.submit(
+						new TinyGoogleServerThread(tinyGoogleSocket)).get();
 				if (result == null) {
 					System.err.println("Tiny_Google_Server{" + tinyGoogleAddress.toString()
 							+ "} failed in execution!");
@@ -188,32 +187,44 @@ public class TinyGoogleServer {
 				+ "} is completed!");
 	}
 
-	public static List<Address> getAvailableHelperListFromNameServer()
-			throws NumberFormatException, UnknownHostException, IOException, ClassNotFoundException {
-		System.out.println("Tiny_Google_Server{" + tinyGoogleAddress.toString()
-				+ "} requesting the list of available Helper_Servers to Name_Server{"
-				+ nameServerAddress.toString() + "}...");
-		nameServerSocket = new Socket(nameServerAddress.ip,
-				Integer.parseInt(nameServerAddress.port));
-		ObjectOutputStream nameServerObjectOutputStream = new ObjectOutputStream(
-				nameServerSocket.getOutputStream());
-		TinyGoogleToNamingMsg t2nMsg = new TinyGoogleToNamingMsg(tinyGoogleAddress,
-				nameServerAddress, 0);
-		nameServerObjectOutputStream.writeObject(t2nMsg);
-		nameServerObjectOutputStream.flush();
+	// public static List<Address> getAvailableHelperListFromNameServer()
+	// throws NumberFormatException, UnknownHostException, IOException, ClassNotFoundException {
+	// System.out.println("Tiny_Google_Server{" + tinyGoogleAddress.toString()
+	// + "} requesting the list of available Helper_Servers to Name_Server{"
+	// + nameServerAddress.toString() + "}...");
+	// nameServerSocket = new Socket(nameServerAddress.ip,
+	// Integer.parseInt(nameServerAddress.port));
+	// ObjectOutputStream nameServerObjectOutputStream = new ObjectOutputStream(
+	// nameServerSocket.getOutputStream());
+	// TinyGoogleToNamingMsg t2nMsg = new TinyGoogleToNamingMsg(tinyGoogleAddress,
+	// nameServerAddress, 0);
+	// nameServerObjectOutputStream.writeObject(t2nMsg);
+	// nameServerObjectOutputStream.flush();
+	//
+	// ObjectInputStream nameServerObjectInputStream = new ObjectInputStream(
+	// nameServerSocket.getInputStream());
+	// NamingToTinyGoogleMsg n2tMsg = (NamingToTinyGoogleMsg) nameServerObjectInputStream
+	// .readObject();
+	// if (n2tMsg == null) {
+	// return null;
+	// }
+	// nameServerObjectOutputStream.close();
+	// nameServerObjectInputStream.close();
+	// nameServerSocket.close();
+	// availableHelperList = n2tMsg.getHelperServerAddressList();
+	// return availableHelperList;
+	// }
 
-		ObjectInputStream nameServerObjectInputStream = new ObjectInputStream(
-				nameServerSocket.getInputStream());
-		NamingToTinyGoogleMsg n2tMsg = (NamingToTinyGoogleMsg) nameServerObjectInputStream
-				.readObject();
-		if (n2tMsg == null) {
-			return null;
+	public static void printAvailableHelperList() {
+		if (availableHelperList == null) {
+			System.err.println("No content in available helper list!!");
+			return;
 		}
-		nameServerObjectOutputStream.close();
-		nameServerObjectInputStream.close();
-		nameServerSocket.close();
-		availableHelperList = n2tMsg.getHelperServerAddressList();
-		return availableHelperList;
+		System.out.println("\n  Available Helpers:");
+		int count = 0;
+		for (Address addr : availableHelperList) {
+			System.out.println("    (" + count + ") " + addr.toString());
+			count++;
+		}
 	}
-
 }

@@ -1,6 +1,5 @@
 package util;
 
-import java.io.RandomAccessFile;
 import java.io.Serializable;
 
 public class IndexingWorkload implements Serializable {
@@ -8,25 +7,25 @@ public class IndexingWorkload implements Serializable {
 	 * This class includes all the necessary information that a helper 
 	 * need to know before starting to work.
 	 */
-	private RandomAccessFile file;
+	private String filePath;
 	private long startIndex;
 	private long endIndex;
 	private boolean isCompletedWork;
 
 	// instantiate new IndexingWorkloads are all 'IN-COMPLETED'
-	public IndexingWorkload(RandomAccessFile file, long start, long end) {
+	public IndexingWorkload(String filePath, long start, long end) {
 		startIndex = start;
 		endIndex = end;
-		this.file = file;
+		this.filePath = filePath;
 		this.isCompletedWork = false;
 	}
 
-	public RandomAccessFile getFile() {
-		return file;
+	public String getFilePath() {
+		return filePath;
 	}
 
-	public void setFile(RandomAccessFile file) {
-		this.file = file;
+	public void setFilePath(String filePath) {
+		this.filePath = filePath;
 	}
 
 	public long getStartIndex() {

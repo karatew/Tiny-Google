@@ -13,6 +13,7 @@ import java.util.TimerTask;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.SocketException;
 import java.util.Enumeration;
 
@@ -48,7 +49,8 @@ public class NameServer {
 			/* (4) looping, continuously listening to requests */
 			while (true) {
 				System.out.println("Name_Server is looping...");
-				Boolean result = executorService.submit(new NameServerThread()).get();
+				Socket socket = listener.accept(); // create a socket for listener
+				Boolean result = executorService.submit(new NameServerThread(socket)).get();
 				if (result) {
 					// System.out.println("A request has been successfully handled by Name_Server!");
 				} else {

@@ -73,7 +73,8 @@ public class HelperServer {
 
 			/* (3) Listen to incoming request that are sent by TinyGoogle Server */
 			while (true) {
-				Boolean result = executorService.submit(new HelperServerThread()).get();
+				Socket helperSocket = listener.accept();
+				Boolean result = executorService.submit(new HelperServerThread(helperSocket)).get();
 				if (!result) {
 					System.err.println("Helper Server{" + helperServerAddress.toString()
 							+ "} failed in executing a thread!");
